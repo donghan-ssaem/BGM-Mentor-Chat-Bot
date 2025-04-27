@@ -117,15 +117,6 @@
     appendMessage('user', message);
     userInput.value = '';
 
-    // 여기에 OpenAI API를 호출하는 코드가 들어가야 합니다.
-    // 아래는 가짜 응답 예시 (나중에 실제 API 호출로 교체)
-    async function sendMessage() {
-  const message = userInput.value;
-  if (!message) return;
-
-  appendMessage('user', message);
-  userInput.value = '';
-
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
