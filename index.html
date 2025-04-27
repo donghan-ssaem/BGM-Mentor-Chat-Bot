@@ -119,8 +119,38 @@
 
     // 여기에 OpenAI API를 호출하는 코드가 들어가야 합니다.
     // 아래는 가짜 응답 예시 (나중에 실제 API 호출로 교체)
-    const fakeResponse = "(예시 응답) 좋은 질문이야! 함께 해결해보자.";
-    appendMessage('bot', fakeResponse);
+    async function sendMessage() {
+  const message = userInput.value;
+  if (!message) return;
+
+  appendMessage('user', message);
+  userInput.value = '';
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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'
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "당신은 초등학생을 위한 친절한 수학 멘토입니다. 폭력, 선정적, 차별적인 주제는 절대 다루지 않습니다." },
+          { role: "user", content: message }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.choices[0].message.content.trim();
+    appendMessage('bot', reply);
+  } catch (error) {
+    appendMessage('bot', '오류가 발생했어요. 다시 시도해 주세요.');
+    console.error(error);
+  }
+}
+
   }
 </script>
 
