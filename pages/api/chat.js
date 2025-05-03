@@ -1,29 +1,21 @@
+// pages/api/chat.js
+
 import fs from 'fs';
 import path from 'path';
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
+import faiss from 'faiss-node'; // 로컬 FAISS 라이브러리 사용
+import * as readline from 'readline';
+import pickle from 'picklejs'; // 텍스트 pkl 로드용 라이브러리
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
-
-// 🔄 텍스트 데이터 불러오기
-const textDataPath = path.resolve(process.cwd(), 'text_data.pkl');
-let textData = [];
-
-try {
-  const raw = fs.readFileSync(textDataPath);
-  textData = JSON.parse(raw.toString());
-} catch (e) {
-  console.error("❌ 텍스트 데이터 로딩 실패", e);
-}
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(200).end();
   }
 
@@ -31,29 +23,42 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { query } = req.body;
-  if (!query) {
-    return res.status(400).json({ error: 'Missing query' });
+  const { question } = req.body;
+
+  if (!question) {
+    return res.status(400).json({ error: 'Missing question' });
   }
 
-  // 지도서 내용 일부 활용 (임시로 앞 5개 청크)
-  const context = textData.slice(0, 5).join('\n\n');
-
-  const prompt = `너는 초등학교 수학 지도서만 기반으로 대답하는 AI 튜터야.\n\n[지도서 내용]\n${context}\n\n[질문]\n${query}\n\n[답변]`;
-
   try {
-    const completion = await openai.createChatCompletion({
+    // 1. 인덱스 및 텍스트 데이터 불러오기
+    const indexPath = path.resolve('./index_file.index');
+    const pklPath = path.resolve('./text_data.pkl');
+    const index = await faiss.readIndex(indexPath);
+    const textData = pickle.load(fs.readFileSync(pklPath));
+
+    // 2. 질문을 벡터화
+    const embed = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: question
+    });
+    const queryVector = embed.data[0].embedding;
+
+    // 3. 관련 텍스트 찾기
+    const { distances, labels } = await index.search(queryVector, 5);
+    const relatedTexts = labels.map(i => textData[i]).filter(Boolean);
+
+    // 4. GPT에 질문 + 관련 문서 같이 전달
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: '너는 지도서 내용만 바탕으로 답변하는 AI 튜터야.' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: '너는 초등학교 수학 지도서를 기반으로만 대답해야 해.' },
+        { role: 'user', content: `질문: ${question}\n\n관련 문서:\n${relatedTexts.join('\n---\n')}` }
       ]
     });
 
-    const answer = completion.data.choices[0].message.content;
-    res.status(200).json({ answer });
+    return res.status(200).json({ answer: completion.choices[0].message.content });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
