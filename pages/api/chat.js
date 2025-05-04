@@ -47,16 +47,19 @@ export default async function handler(req, res) {
       .slice(0, 5)
       .map(item => item.text);
 
-    let systemPrompt = '';
-    let userPrompt = '';
-
-    if (topTexts.length > 0 && scored[0].score > 0.75) {
-      systemPrompt = '너는 초등학교 수학 지도서를 바탕으로 질문에 답하는 수학 전문 챗봇이야.';
-      userPrompt = `질문: ${question}\n\n지도서 발췌 내용:\n${topTexts.join('\n---\n')}`;
-    } else {
-      systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명해줘.';
-      userPrompt = `질문: ${question}`;
-    }
+      let systemPrompt = '';
+      let userPrompt = '';
+      
+      const SIMILARITY_THRESHOLD = 0.75;
+      const bestScore = scored[0]?.score || 0;
+      
+      if (topTexts.length > 0 && bestScore > SIMILARITY_THRESHOLD) {
+        systemPrompt = '너는 초등 수학 지도서를 참고하여 질문에 답하는 챗봇이야. 하지만 질문과 지도서 내용이 정확히 일치하지 않으면, 일반적인 설명도 함께 해줘.';
+        userPrompt = `질문: ${question}\n\n참고 가능한 지도서 내용:\n${topTexts.join('\n---\n')}`;
+      } else {
+        systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명해줘.';
+        userPrompt = `질문: ${question}`;
+      }      
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
