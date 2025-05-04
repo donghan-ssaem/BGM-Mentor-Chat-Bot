@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const dataPath = path.join(process.cwd(), 'text_data.json');
+    const dataPath = path.join(process.cwd(), 'public', 'text_data.json');
     const rawData = fs.readFileSync(dataPath, 'utf8');
     const textData = JSON.parse(rawData);
 
