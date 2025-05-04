@@ -41,6 +41,11 @@ export default async function handler(req, res) {
     });
     const questionEmbedding = embeddingResponse.data[0].embedding;
 
+    console.log("🟡 사용자 질문:", question);
+console.log("🟡 textData 항목 수:", textData.length);
+console.log("🟡 첫 번째 항목:", textData[0]);
+console.log("🟡 questionEmbedding 길이:", questionEmbedding.length);
+
     const scored = textData.map(item => ({
       text: item.text,
       score: cosineSimilarity(questionEmbedding, item.embedding)
@@ -49,6 +54,16 @@ export default async function handler(req, res) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map(item => item.text);
+      
+      console.log("🟢 유사도 상위 항목:");
+scored
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 5)
+  .forEach((item, index) => {
+    console.log(`#${index + 1}: 점수 =`, item.score.toFixed(4));
+    console.log(item.text.slice(0, 100) + '...');
+  });
+
 
     let systemPrompt = '';
     let userPrompt = '';
