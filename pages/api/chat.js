@@ -54,12 +54,13 @@ export default async function handler(req, res) {
       const bestScore = scored[0]?.score || 0;
       
       if (topTexts.length > 0 && bestScore > SIMILARITY_THRESHOLD) {
-        systemPrompt = '너는 초등 수학 지도서를 참고하여 질문에 답하는 챗봇이야. 하지만 질문과 지도서 내용이 정확히 일치하지 않으면, 일반적인 설명도 함께 해줘.';
+        systemPrompt = '너는 초등 수학 지도서를 참고하여 질문에 답하는 챗봇이야. 질문에 대해 초등학생이 이해할 수 있게 핵심만 간단히 말해줘. 설명이 너무 길어지지 않도록 주의해. 하지만 질문과 지도서 내용이 정확히 일치하지 않으면, 일반적인 설명도 함께 해줘.';
         userPrompt = `질문: ${question}\n\n참고 가능한 지도서 내용:\n${topTexts.join('\n---\n')}`;
       } else {
-        systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명해줘.';
+        systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명하되, 핵심만 간단히 말해줘.';
         userPrompt = `질문: ${question}`;
-      }      
+      }
+          
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
