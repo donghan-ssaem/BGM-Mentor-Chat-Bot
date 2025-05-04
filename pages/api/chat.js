@@ -1,6 +1,3 @@
-import 'dotenv/config';
-import fs from 'fs';
-import path from 'path';
 import { OpenAI } from 'openai';
 
 function cosineSimilarity(vec1, vec2) {
@@ -25,26 +22,20 @@ export default async function handler(req, res) {
   }
 
   const { question } = req.body;
-
   if (!question) {
     return res.status(400).json({ error: 'Missing question' });
   }
 
   try {
-    const dataPath = path.join(process.cwd(), 'public', 'text_data.json');
-    const rawData = fs.readFileSync(dataPath, 'utf8');
-    const textData = JSON.parse(rawData);
+    const jsonUrl = `${req.headers.host.startsWith('localhost') ? 'http' : 'https'}://${req.headers.host}/text_data.json`;
+    const response = await fetch(jsonUrl);
+    const textData = await response.json();
 
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
       input: question
     });
     const questionEmbedding = embeddingResponse.data[0].embedding;
-
-    console.log("🟡 사용자 질문:", question);
-console.log("🟡 textData 항목 수:", textData.length);
-console.log("🟡 첫 번째 항목:", textData[0]);
-console.log("🟡 questionEmbedding 길이:", questionEmbedding.length);
 
     const scored = textData.map(item => ({
       text: item.text,
@@ -55,25 +46,13 @@ console.log("🟡 questionEmbedding 길이:", questionEmbedding.length);
       .slice(0, 5)
       .map(item => item.text);
 
-      console.log("🟢 유사도 상위 항목:");
-scored
-  .sort((a, b) => b.score - a.score)
-  .slice(0, 5)
-  .forEach((item, index) => {
-    console.log(`#${index + 1}: 점수 =`, item.score.toFixed(4));
-    console.log(item.text.slice(0, 100) + '...');
-  });
-
-
-      let systemPrompt = '';
+    let systemPrompt = '';
     let userPrompt = '';
 
     if (topTexts.length > 0 && scored[0].score > 0.75) {
-      // 벡터 유사도 높은 자료가 있을 때 → 지도서 기반 답변
       systemPrompt = '너는 초등학교 수학 지도서를 바탕으로 질문에 답하는 수학 전문 챗봇이야.';
       userPrompt = `질문: ${question}\n\n지도서 발췌 내용:\n${topTexts.join('\n---\n')}`;
     } else {
-      // 벡터 검색 결과가 불충분할 경우 → 일반 답변으로 fallback
       systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명해줘.';
       userPrompt = `질문: ${question}`;
     }
@@ -86,15 +65,9 @@ scored
       ]
     });
 
-    console.log("📤 GPT systemPrompt:", systemPrompt);
-console.log("📤 GPT userPrompt:", userPrompt);
-console.log("🧠 GPT 응답 전체:", JSON.stringify(completion, null, 2));
-
-
     return res.status(200).json({ answer: completion.choices[0].message.content });
-
   } catch (error) {
-    console.error(error);
+    console.error('❌ 오류 발생:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
