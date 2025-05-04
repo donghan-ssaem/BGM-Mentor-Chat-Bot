@@ -85,7 +85,7 @@
 </div>
 
 <script>
-  const chatbotButton = document.getElementById('chatbotButton');
+    const chatbotButton = document.getElementById('chatbotButton');
   const chatbotWindow = document.getElementById('chatbotWindow');
   const sendButton = document.getElementById('sendButton');
   const userInput = document.getElementById('userInput');
@@ -118,11 +118,11 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ question: message })
       });
 
       const data = await response.json();
-      appendMessage('bot', data.reply);
+      appendMessage('bot', data.answer || '죄송합니다. 답변을 생성하지 못했습니다.');
     } catch (error) {
       appendMessage('bot', '오류가 발생했어요. 다시 시도해 주세요.');
       console.error(error);
