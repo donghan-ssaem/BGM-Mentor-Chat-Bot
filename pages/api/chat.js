@@ -27,9 +27,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const jsonUrl = `${req.headers.host.startsWith('localhost') ? 'http' : 'https'}://${req.headers.host}/text_data.json`;
+    const jsonUrl = 'https://drive.google.com/uc?export=download&id=1u1gnMOKjxfSHuf7ySBzWHvC_N85Sxdgu';
     const response = await fetch(jsonUrl);
-    const textData = await response.json();
+    const textData = await response.json();    
+    
 
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
