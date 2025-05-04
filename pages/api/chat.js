@@ -50,11 +50,24 @@ export default async function handler(req, res) {
       .slice(0, 5)
       .map(item => item.text);
 
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (topTexts.length > 0 && scored[0].score > 0.75) {
+      // 벡터 유사도 높은 자료가 있을 때 → 지도서 기반 답변
+      systemPrompt = '너는 초등학교 수학 지도서를 바탕으로 질문에 답하는 수학 전문 챗봇이야.';
+      userPrompt = `질문: ${question}\n\n지도서 발췌 내용:\n${topTexts.join('\n---\n')}`;
+    } else {
+      // 벡터 검색 결과가 불충분할 경우 → 일반 답변으로 fallback
+      systemPrompt = '너는 친절하고 지적인 AI 챗봇이야. 초등학생이나 선생님이 이해할 수 있도록 설명해줘.';
+      userPrompt = `질문: ${question}`;
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: '너는 초등학교 수학 지도서를 기반으로만 대답해야 해.' },
-        { role: 'user', content: `질문: ${question}\n\n관련 문서:\n${topTexts.join('\n---\n')}` }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ]
     });
 
