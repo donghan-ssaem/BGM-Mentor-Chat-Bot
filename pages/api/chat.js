@@ -86,7 +86,10 @@ scored
       ]
     });
 
-    console.log("🧠 GPT 응답 전체:", JSON.stringify(completion, null, 2));
+    console.log("📤 GPT systemPrompt:", systemPrompt);
+console.log("📤 GPT userPrompt:", userPrompt);
+console.log("🧠 GPT 응답 전체:", JSON.stringify(completion, null, 2));
+
 
     return res.status(200).json({ answer: completion.choices[0].message.content });
 
