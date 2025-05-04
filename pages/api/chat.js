@@ -54,7 +54,7 @@ console.log("🟡 questionEmbedding 길이:", questionEmbedding.length);
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map(item => item.text);
-      
+
       console.log("🟢 유사도 상위 항목:");
 scored
   .sort((a, b) => b.score - a.score)
@@ -65,7 +65,7 @@ scored
   });
 
 
-    let systemPrompt = '';
+      let systemPrompt = '';
     let userPrompt = '';
 
     if (topTexts.length > 0 && scored[0].score > 0.75) {
@@ -87,6 +87,7 @@ scored
     });
 
     return res.status(200).json({ answer: completion.choices[0].message.content });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Internal Server Error' });
